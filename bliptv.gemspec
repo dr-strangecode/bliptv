@@ -2,17 +2,17 @@
 
 Gem::Specification.new do |s|
   s.name = %q{bliptv}
-  s.version = "0.1.1"
+  s.version = "0.1.11"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Michael Kelly Sutton"]
-  s.date = %q{2009-06-05}
+  s.authors = ["Michael Kelly Sutton","Brandon Harris"]
+  s.date = %q{2009-09-28}
   s.description = %q{A Ruby library from Blip.tv}
-  s.email = %q{michael.k.sutton@gmail.com}
+  s.email = %q{bbwharris@gmail.com}
   s.extra_rdoc_files = ["lib/bliptv/api_spec.rb", "lib/bliptv/base.rb", "lib/bliptv/multipart_params.rb", "lib/bliptv/request.rb", "lib/bliptv/video.rb", "lib/bliptv.rb", "lib/ext/array.rb", "lib/ext/hash.rb", "lib/ext/open_struct.rb", "README.rdoc"]
   s.files = ["lib/bliptv/api_spec.rb", "lib/bliptv/base.rb", "lib/bliptv/multipart_params.rb", "lib/bliptv/request.rb", "lib/bliptv/video.rb", "lib/bliptv.rb", "lib/ext/array.rb", "lib/ext/hash.rb", "lib/ext/open_struct.rb", "License.txt", "Manifest", "Rakefile", "README.rdoc", "test/test_base.rb", "test/test_suite.rb", "test/test_video.rb", "bliptv.gemspec"]
   s.has_rdoc = true
-  s.homepage = %q{http://github.com/kellysutton/bliptv}
+  s.homepage = %q{http://github.com/bbwharris/bliptv}
   s.rdoc_options = ["--line-numbers", "--inline-source", "--title", "Bliptv", "--main", "README.rdoc"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{bliptv}
