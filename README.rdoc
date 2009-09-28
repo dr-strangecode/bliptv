@@ -1,3 +1,7 @@
+= Differences in this Fork
+Uses the blip.tv json api to fill in the missing information from the main API. 
+Right now, this is experimental to scratch and itch.
+
 = Blip.tv Ruby Library
 
 A Ruby gem for accessing the blip.tv API (http://wiki.blip.tv/index.php/REST_Upload_API)
