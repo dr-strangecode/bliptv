@@ -16,17 +16,27 @@ module BlipTV
       'This method is not yet implemented.'
     end
   end
-  
+
   #
   # This is the class that should be instantiated for basic
   # communication with the Blip.tv API
   #
   class Base
-    
+    attr_accessor :username, :password, :cookie
+
     # TODO allow user to specify userlogin and password on intialize
-    def initialize
+    def initialize(attributes={})
+      attributes.each do |k,v|
+        respond_to?(:"#{k}=") ? send(:"#{k}=", v) : raise(NoMethodError, "Unknown method #{k}")
+      end
+      #set the cookie
+      if @username and @password
+        login = open("http://blip.tv/dashboard/?userlogin=#{@username}&password=#{@password}")
+        @cookie = login.meta['set-cookie'].split('; ',2)[0]
+      end
+
     end
-    
+
     # Implements the Blip.tv REST Upload API
     #
     # <tt>new_attributes</tt> hash should contain next required keys:
@@ -48,18 +58,18 @@ module BlipTV
     #
     #  bliptv.upload_video(:title => 'Check out this guy getting kicked in the nuts!', :file => File.open('/movies/nuts.mov'))
     #
-    # Returns BlipTV::Video instance. 
+    # Returns BlipTV::Video instance.
     #
     def upload_video(new_attributes={})
       BlipTV::ApiSpec.check_attributes('videos.upload', new_attributes)
-      
+
       new_attributes = {
         :post => "1",
         :item_type => "file",
         :skin => "xmlhttprequest",
         :file_role => "Web"
       }.merge(new_attributes) # blip.tv requires the "post" param to be set to 1
-      
+
       request = BlipTV::Request.new(:post, 'videos.upload')
       request.run do |p|
         for param, value in new_attributes
@@ -69,8 +79,8 @@ module BlipTV
 
       BlipTV::Video.new(request.response['post_url'].to_s)
     end
-    
-    
+
+
     # Looks up all videos on Blip.tv with a given <tt>username</tt>
     #
     # Options hash could contain next values:
@@ -87,13 +97,37 @@ module BlipTV
     #
     def find_all_videos_by_user(username, options={})
       options[:page] ||= 1; options[:pagelen] ||= 20
-      url, path = "#{username}.blip.tv", "/posts/?skin=api&page=#{options[:page]}&pagelen=#{options[:pagelen]}"
-      request = Net::HTTP.get(url, path)
-      hash = Hash.from_xml(request)
-      hash == nil ? [] : parse_videos_list(hash)
+      url = "http://#{username}.blip.tv/posts/?skin=json&version=2&page=#{options[:page]}&pagelen=#{options[:pagelen]}"
+      request = open(url,{"UserAgent" => "Ruby-Wget"}).read
+      json = JSON.parse(request[16...-3])
+      parse_json_videos_list(json)
     end
-  
-  
+
+    # Looks up all videos on Blip.tv from the setup login <tt>username</tt>
+    #
+    # Options hash could contain next values:
+    # * <tt>page</tt>: The "page number" of results to retrieve (e.g. 1, 2, 3); if not specified, the default value equals 1.
+    # * <tt>pagelen</tt>: The number of results to retrieve per page (maximum 100). If not specified, the default value equals 20.
+    #
+    # Example:
+    #
+    #  bliptv.all_videos_from_login
+    #    or
+    #  bliptv.all_videos_from_login({:page => 1, :pagelen => 20})
+    #
+    # Returns array of BlipTV::Video objects.
+    #
+    def all_videos_from_login(options={})
+      options[:page] ||= 1; options[:pagelen] ||= 200
+      #use the cookie
+      url = "http://#{@username}.blip.tv/posts?skin=json&version=2&page=#{options[:page]}&pagelen=#{options[:pagelen]}"
+      request = open(url,{"UserAgent" => "Ruby-Wget","Cookie" => @cookie}).read
+      json = JSON.parse(request[16...-3])
+      parse_json_videos_list(json)
+      #hash = Hash.from_xml(request)
+      #hash.nil? ? [] : parse_videos_list(hash)
+    end
+
     # Searches through and returns videos based on the <tt>search_string</tt>.
     #
     # This method is a direct call of Blip.tv's search method. You get what you get. No guarantees are made.
@@ -105,18 +139,35 @@ module BlipTV
     # Returns an array of BlipTV::Video objects
     #
     def search_videos(search_string)
-      request = Net::HTTP.get(URI.parse("http://www.blip.tv/search/?search=#{search_string}&skin=api"))
-      hash = Hash.from_xml(request)
-      parse_videos_list(hash)
+      url = "http://www.blip.tv/search/?search=#{search_string}&skin=json"
+      request = open(url,{"UserAgent" => "Ruby-Wget"}).read
+      json = JSON.parse(request[16...-3])
+      parse_json_videos_list(json)
     end
-    
+
     private
-  
-    def parse_videos_list(hash)
+
+    def parse_json_videos_list(json,options={})
       list = []
       begin
-        hash["response"]["payload"]["asset"].each do |entry| 
-          list << Video.new(entry)
+        json.each do |j|
+          list << Video.new(j,{:cookie => @cookie,:json => true})
+        end
+      rescue NoMethodError
+        return list
+      end
+      return list
+    end
+
+    def parse_videos_list(hash,options={})
+      list = []
+      begin
+        hash["response"]["payload"]["asset"].each do |entry|
+          if @cookie
+            list << Video.new(entry,{:cookie => @cookie})
+          else
+            list << Video.new(entry)
+          end
         end
       rescue NoMethodError
         list = []

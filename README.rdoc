@@ -1,6 +1,8 @@
 = Differences in this Fork
-Uses the blip.tv json api to fill in the missing information from the main API. 
-Right now, this is experimental to scratch and itch.
+* Uses the blip.tv json api for retrieval instead of the main API. 
+* Uses cookie based authentication to retrieve private videos
+
+Right now, this is experimental to scratch and itch, but it is pretty stable.
 
 = Blip.tv Ruby Library
 
@@ -49,11 +51,21 @@ Or what if you wanted a list of all videos by a user? Also easy:
   
 find_all_videos_by_user will return a list of BlipTV::Video objects.
 
+If you want to pull private videos, you will need to be authenticated to blip.
+
+  client = BlipTV::Base.new({:username => "barack_obama", :password => "michellexoxo"})
+  videos = client.all_videos_from_login
+
+This will login to the site, save the cookie, and pull all videos for the current login.
+
 More usage coming soon.
   
 == Authors
-
+Main:
 Kelly Sutton (http://michaelkellysutton.com)
+
+This fork:
+Brandon Harris (http://brandon-harris.com)
 
 == Features
 

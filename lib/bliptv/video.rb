@@ -28,90 +28,55 @@ module BlipTV
                   :description,
                   :guid,
                   :deleted,
-                  :view_count,
+                  :views,
                   :tags,
-                  :links,
                   :author,
                   :update_time,
-                  :explicit,
-                  :notes,
-                  :license,
                   :embed_url,
                   :embed_code,
                   :thumbnail_url,
-                  :thumbnail120_url
+                  :thumbnail120_url,
+                  :cookie
 
-    def initialize(blip_id) #:nodoc:
+    def initialize(blip_id,options={}) #:nodoc:
       blip_id = blip_id.to_s if blip_id.class == Fixnum
-
-      if blip_id.class == String && blip_id.match(BLIP_TV_ID_EXPR)
-        update_attributes_from_id(blip_id)
-      elsif blip_id.class == Hash
-        update_attributes_from_hash(blip_id)
+      @cookie = options[:cookie] if options[:cookie]
+      if options[:json]
+        set_attributes_from_json(blip_id)
+      else
+        #this code is probably dead now
+        if blip_id.class == String && blip_id.match(BLIP_TV_ID_EXPR)
+          update_attributes_from_id(blip_id)
+        end
       end
     end
 
     def update_attributes_from_id(blip_id)
       @id = blip_id
-
-      a = get_attributes
-      update_attributes_from_hash(a)
+      query_attributes
     end
 
-    def update_attributes_from_hash(a)
-
-      @id               = a['item_id'] if @id == nil
-      @title            = a['title']
-      @description      = a['description']
-      @guid             = a['guid']
-      @deleted          = a['deleted']
-      @view_count       = a['views']
-      @tags             = parse_tags a['tags']
-      @links            = a['links']['link']
-      @thumbnail_url    = a['thumbnail_url']
-      @author           = a['created_by']['login'] if a['created_by']
-      @update_time      = a['timestamp'] ? Time.at(a['update_time'].to_i) : nil
-      @explicit         = a['explicit']
-      @license          = a['license']
-      @notes            = a['notes']
-      @embed_url        = a['embed_url']
-      @embed_code       = a['embed_code']
-      update_missing_api_attributes_from_json
+    def query_attributes
+      url = "http://www.blip.tv/file/#{@id.to_s}?skin=json&version=2"
+      request = open(url,{"UserAgent" => "Ruby-Wget"}).read
+      json = JSON.parse(request[16...-3])
+      set_attributes_from_json(json)
     end
 
-    def update_missing_api_attributes_from_json
-      url = "http://www.blip.tv/file/#{@id.to_s}?skin=json"
-      res = open(url,{"UserAgent" => "Ruby-Wget"}).read
-      #strip out default JS function and parse
-      json = JSON.parse(res[16...-3])
-      @thumbnail_url    = json[0]['Post']['thumbnailUrl']
-      @thumbnail120_url = json[0]['Post']['thumbnail120Url']
-    end
-
-    #
-    # fire off a HTTP GET response to Blip.tv
-    #
-    # In the future, this should probably be rolled into the
-    # BlipTV::Request class, so that all exception raising and
-    # network communication exists in instances of that class.
-    #
-    def get_attributes
-      url = URI.parse('http://www.blip.tv/')
-      res = Net::HTTP.start(url.host, url.port) {|http|
-       http.get("http://www.blip.tv/file/#{@id.to_s}?skin=api")
-      }
-
-      hash = Hash.from_xml(res.body)
-
-      if hash["response"]["status"] != "OK"
-        raise VideoResponseError.new(hash["response"]["notice"])
-      end
-
-      if hash["response"]["payload"]["asset"].is_a?(Array)
-        return hash["response"]["payload"]["asset"][0] # there may be several assets. In that case, read the first one
-      else
-        return hash["response"]["payload"]["asset"]
-      end
+    def set_attributes_from_json(json)
+      @id               = json['itemId'] if @id.nil?
+      @title            = json['title']
+      @description      = json['description']
+      @guid             = json['postsGuid']
+      @deleted          = json['deleted']
+      @views            = json['views'] if json['views']
+      @tags             = json['tags'].join(",")
+      @thumbnail_url    = json['thumbnailUrl']
+      @thumbnail120_url = json['thumbnail120Url']
+      @author           = json['login']
+      @update_time      = Time.at(json['datestampUnixtime'].to_i)
+      @embed_url        = json['embedUrl']
+      @embed_code       = json['embedCode']
     end
 
     #
