@@ -38,29 +38,16 @@ module BlipTV
                   :thumbnail120_url,
                   :cookie
 
-    def initialize(blip_id,options={}) #:nodoc:
-      blip_id = blip_id.to_s if blip_id.class == Fixnum
+    def initialize(json,options={}) #:nodoc:
       @cookie = options[:cookie] if options[:cookie]
-      if options[:json]
-        set_attributes_from_json(blip_id)
-      else
-        #this code is probably dead now
-        if blip_id.class == String && blip_id.match(BLIP_TV_ID_EXPR)
-          update_attributes_from_id(blip_id)
-        end
-      end
+      video_json = query_attributes(json)
+      set_attributes_from_json(video_json)
     end
 
-    def update_attributes_from_id(blip_id)
-      @id = blip_id
-      query_attributes
-    end
-
-    def query_attributes
-      url = "http://www.blip.tv/file/#{@id.to_s}?skin=json&version=2"
-      request = open(url,{"UserAgent" => "Ruby-Wget"}).read
-      json = JSON.parse(request[16...-3])
-      set_attributes_from_json(json)
+    def query_attributes(json)
+      url = "#{json['url']}?skin=json&version=2"
+      request = open(url,{"UserAgent" => "Ruby-Wget","Cookie" => @cookie}).read
+      json = JSON.parse(request[16...-3])[0]
     end
 
     def set_attributes_from_json(json)
