@@ -98,7 +98,7 @@ module BlipTV
     def find_all_videos_by_user(username, options={})
       options[:page] ||= 1; options[:pagelen] ||= 20
       #url = "http://#{username}.blip.tv/posts/?skin=json&version=2&page=#{options[:page]}&pagelen=#{options[:pagelen]}"
-      url = "http://#{username}.blip.tv/posts/?skin=json&version=2}"
+      url = "http://#{username}.blip.tv/posts/?skin=json&version=2"
       request = open(url,{"UserAgent" => "Ruby-Wget"}).read
       json = JSON.parse(request[16...-3])
       parse_json_videos_list(json)
@@ -122,7 +122,7 @@ module BlipTV
       options[:page] ||= 1; options[:pagelen] ||= 200
       #use the cookie
       #url = "http://#{@username}.blip.tv/posts?skin=json&version=2&page=#{options[:page]}&pagelen=#{options[:pagelen]}"
-      url = "http://#{@username}.blip.tv/posts?skin=json&version=2}"
+      url = "http://#{@username}.blip.tv/posts?skin=json&version=2"
       request = open(url,{"UserAgent" => "Ruby-Wget","Cookie" => @cookie}).read
       json = JSON.parse(request[16...-3])
       parse_json_videos_list(json)
